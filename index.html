@@ -1,0 +1,2152 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QuizApp SDN 22 Tanah Keras</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Poppins', sans-serif; }
+        .gradient-bg { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .card-hover { transition: all 0.3s ease; }
+        .card-hover:hover { transform: translateY(-5px); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
+        .loading { animation: spin 1s linear infinite; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .fade-in { animation: fadeIn 0.5s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Header -->
+    <header class="gradient-bg text-white shadow-lg">
+        <div class="container mx-auto px-4 py-6">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <i class="fas fa-graduation-cap text-3xl"></i>
+                    <div>
+                        <h1 class="text-2xl font-bold">QuizApp</h1>
+                        <p class="text-sm opacity-90">SDN 22 Tanah Keras</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div id="userInfo" class="flex items-center space-x-3 bg-white bg-opacity-20 px-4 py-2 rounded-lg">
+                        <i id="userIcon" class="fas fa-user"></i>
+                        <div>
+                            <div id="userName" class="text-sm font-medium">-</div>
+                            <div id="userRole" class="text-xs opacity-75">-</div>
+                        </div>
+                    </div>
+                    <div id="connectionStatus" class="flex items-center space-x-2">
+                        <div class="w-3 h-3 bg-yellow-400 rounded-full animate-pulse"></div>
+                        <span class="text-sm">Menghubungkan...</span>
+                    </div>
+                    <button onclick="testConnection()" class="bg-white bg-opacity-20 hover:bg-opacity-30 px-4 py-2 rounded-lg transition-all">
+                        <i class="fas fa-sync-alt"></i> Test Koneksi
+                    </button>
+                    <button onclick="logout()" class="bg-red-500 bg-opacity-80 hover:bg-opacity-100 px-4 py-2 rounded-lg transition-all">
+                        <i class="fas fa-sign-out-alt"></i> Keluar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Login Screen -->
+    <div id="loginScreen" class="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+        <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
+            <div class="text-center mb-8">
+                <i class="fas fa-graduation-cap text-5xl text-blue-600 mb-4"></i>
+                <h2 class="text-3xl font-bold text-gray-800 mb-2">QuizApp Login</h2>
+                <p class="text-gray-600">SDN 22 Tanah Keras</p>
+            </div>
+            
+            <form id="loginForm" class="space-y-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Mode Pengguna</label>
+                    <select id="userModeSelect" class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <option value="">Pilih Mode</option>
+                        <option value="teacher">Mode Guru</option>
+                        <option value="student">Mode Siswa</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Username</label>
+                    <input type="text" id="usernameInput" placeholder="Masukkan username" class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <div id="usernameHelp" class="mt-2 text-sm text-gray-500 hidden">
+                        <!-- Help text will be shown based on selected mode -->
+                    </div>
+                </div>
+                
+                <div id="studentSelect" class="hidden">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Atau Pilih Nama Siswa</label>
+                    <select id="studentNameSelect" class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <option value="">Pilih nama siswa...</option>
+                    </select>
+                </div>
+                
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-200 transform hover:scale-105">
+                    <i class="fas fa-sign-in-alt mr-2"></i>Masuk
+                </button>
+            </form>
+            
+            <div class="mt-6 text-center">
+                <p class="text-sm text-gray-500">
+                    <i class="fas fa-info-circle mr-1"></i>
+                    Guru: gunakan username "Guru" | Siswa: gunakan nama yang terdaftar
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main id="mainContent" class="hidden container mx-auto px-4 py-8">
+        <!-- Navigation Tabs -->
+        <div class="bg-white rounded-xl shadow-lg mb-8 overflow-hidden">
+            <div class="flex flex-wrap border-b">
+                <button onclick="showTab('dashboard')" class="tab-btn active px-6 py-4 font-medium transition-all hover:bg-gray-50">
+                    <i class="fas fa-tachometer-alt mr-2"></i>Dashboard
+                </button>
+                <button onclick="showTab('students')" class="tab-btn px-6 py-4 font-medium transition-all hover:bg-gray-50">
+                    <i class="fas fa-users mr-2"></i>Data Siswa
+                </button>
+                <button onclick="showTab('subjects')" class="tab-btn px-6 py-4 font-medium transition-all hover:bg-gray-50">
+                    <i class="fas fa-book mr-2"></i>Mata Pelajaran
+                </button>
+                <button onclick="showTab('questions')" class="tab-btn px-6 py-4 font-medium transition-all hover:bg-gray-50">
+                    <i class="fas fa-question-circle mr-2"></i>Bank Soal
+                </button>
+                <button onclick="showTab('quiz')" class="tab-btn px-6 py-4 font-medium transition-all hover:bg-gray-50">
+                    <i class="fas fa-play mr-2"></i>Mulai Quiz
+                </button>
+                <button onclick="showTab('results')" class="tab-btn px-6 py-4 font-medium transition-all hover:bg-gray-50">
+                    <i class="fas fa-chart-bar mr-2"></i>Hasil Quiz
+                </button>
+            </div>
+        </div>
+
+        <!-- Dashboard Tab -->
+        <div id="dashboard" class="tab-content">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div class="bg-white rounded-xl shadow-lg p-6 card-hover">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-gray-600 text-sm">Total Siswa</p>
+                            <p id="totalStudents" class="text-3xl font-bold text-blue-600">0</p>
+                        </div>
+                        <i class="fas fa-users text-4xl text-blue-200"></i>
+                    </div>
+                </div>
+                <div class="bg-white rounded-xl shadow-lg p-6 card-hover">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-gray-600 text-sm">Mata Pelajaran</p>
+                            <p id="totalSubjects" class="text-3xl font-bold text-green-600">0</p>
+                        </div>
+                        <i class="fas fa-book text-4xl text-green-200"></i>
+                    </div>
+                </div>
+                <div class="bg-white rounded-xl shadow-lg p-6 card-hover">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-gray-600 text-sm">Bank Soal</p>
+                            <p id="totalQuestions" class="text-3xl font-bold text-purple-600">0</p>
+                        </div>
+                        <i class="fas fa-question-circle text-4xl text-purple-200"></i>
+                    </div>
+                </div>
+                <div class="bg-white rounded-xl shadow-lg p-6 card-hover">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-gray-600 text-sm">Quiz Selesai</p>
+                            <p id="totalResults" class="text-3xl font-bold text-red-600">0</p>
+                        </div>
+                        <i class="fas fa-chart-bar text-4xl text-red-200"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <h3 class="text-xl font-bold mb-4">Selamat Datang di QuizApp!</h3>
+                <p class="text-gray-600 mb-4">Sistem manajemen quiz digital untuk SDN 22 Tanah Keras. Kelola data siswa, mata pelajaran, bank soal, dan lakukan quiz dengan mudah.</p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <button onclick="showTab('students')" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg transition-all">
+                        <i class="fas fa-users mr-2"></i>Kelola Data Siswa
+                    </button>
+                    <button onclick="showTab('quiz')" class="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg transition-all">
+                        <i class="fas fa-play mr-2"></i>Mulai Quiz Sekarang
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Students Tab -->
+        <div id="students" class="tab-content hidden">
+            <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-bold">Data Siswa</h3>
+                    <button onclick="showAddStudentForm()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-all">
+                        <i class="fas fa-plus mr-2"></i>Tambah Siswa
+                    </button>
+                </div>
+                
+                <!-- Add Student Form -->
+                <div id="addStudentForm" class="hidden mb-6 p-4 bg-gray-50 rounded-lg">
+                    <h4 class="font-semibold mb-3">Tambah Siswa Baru</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <input type="text" id="studentName" placeholder="Nama Lengkap" class="border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <select id="studentGrade" class="border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="">Pilih Kelas</option>
+                            <option value="1">Kelas 1</option>
+                            <option value="2">Kelas 2</option>
+                            <option value="3">Kelas 3</option>
+                            <option value="4">Kelas 4</option>
+                            <option value="5">Kelas 5</option>
+                            <option value="6">Kelas 6</option>
+                        </select>
+                        <input type="text" id="studentNISN" placeholder="NISN" class="border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                    <div class="flex space-x-2 mt-4">
+                        <button onclick="saveStudent()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg transition-all">
+                            <i class="fas fa-save mr-2"></i>Simpan
+                        </button>
+                        <button onclick="hideAddStudentForm()" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-all">
+                            <i class="fas fa-times mr-2"></i>Batal
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Edit Student Form -->
+                <div id="editStudentForm" class="hidden mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                    <h4 class="font-semibold mb-3 text-blue-800">Edit Data Siswa</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <input type="text" id="editStudentName" placeholder="Nama Lengkap" class="border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <select id="editStudentGrade" class="border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="">Pilih Kelas</option>
+                            <option value="1">Kelas 1</option>
+                            <option value="2">Kelas 2</option>
+                            <option value="3">Kelas 3</option>
+                            <option value="4">Kelas 4</option>
+                            <option value="5">Kelas 5</option>
+                            <option value="6">Kelas 6</option>
+                        </select>
+                        <input type="text" id="editStudentNISN" placeholder="NISN" class="border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                    <div class="flex space-x-2 mt-4">
+                        <button onclick="updateStudent()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-all">
+                            <i class="fas fa-save mr-2"></i>Update
+                        </button>
+                        <button onclick="hideEditStudentForm()" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-all">
+                            <i class="fas fa-times mr-2"></i>Batal
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Students List -->
+                <div id="studentsList" class="overflow-x-auto">
+                    <table class="w-full table-auto">
+                        <thead>
+                            <tr class="bg-gray-100">
+                                <th class="px-4 py-2 text-left">Nama</th>
+                                <th class="px-4 py-2 text-left">Kelas</th>
+                                <th class="px-4 py-2 text-left">NISN</th>
+                                <th class="px-4 py-2 text-left">Tanggal Daftar</th>
+                                <th id="studentActionsHeader" class="px-4 py-2 text-left ${userMode === 'teacher' ? '' : 'hidden'}">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="studentsTableBody">
+                            <tr>
+                                <td colspan="4" class="px-4 py-8 text-center text-gray-500">
+                                    <i class="fas fa-spinner loading text-2xl mb-2"></i>
+                                    <p>Memuat data siswa...</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Subjects Tab -->
+        <div id="subjects" class="tab-content hidden">
+            <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-bold">Mata Pelajaran</h3>
+                    <button onclick="showAddSubjectForm()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg transition-all">
+                        <i class="fas fa-plus mr-2"></i>Tambah Mata Pelajaran
+                    </button>
+                </div>
+                
+                <!-- Add Subject Form -->
+                <div id="addSubjectForm" class="hidden mb-6 p-4 bg-gray-50 rounded-lg">
+                    <h4 class="font-semibold mb-3">Tambah Mata Pelajaran Baru</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <input type="text" id="subjectName" placeholder="Nama Mata Pelajaran" class="border rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                        <select id="subjectGrade" class="border rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                            <option value="">Pilih Kelas</option>
+                            <option value="1">Kelas 1</option>
+                            <option value="2">Kelas 2</option>
+                            <option value="3">Kelas 3</option>
+                            <option value="4">Kelas 4</option>
+                            <option value="5">Kelas 5</option>
+                            <option value="6">Kelas 6</option>
+                        </select>
+                    </div>
+                    <div class="flex space-x-2 mt-4">
+                        <button onclick="saveSubject()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg transition-all">
+                            <i class="fas fa-save mr-2"></i>Simpan
+                        </button>
+                        <button onclick="hideAddSubjectForm()" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-all">
+                            <i class="fas fa-times mr-2"></i>Batal
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Edit Subject Form -->
+                <div id="editSubjectForm" class="hidden mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                    <h4 class="font-semibold mb-3 text-blue-800">Edit Mata Pelajaran</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <input type="text" id="editSubjectName" placeholder="Nama Mata Pelajaran" class="border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <select id="editSubjectGrade" class="border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="">Pilih Kelas</option>
+                            <option value="1">Kelas 1</option>
+                            <option value="2">Kelas 2</option>
+                            <option value="3">Kelas 3</option>
+                            <option value="4">Kelas 4</option>
+                            <option value="5">Kelas 5</option>
+                            <option value="6">Kelas 6</option>
+                        </select>
+                    </div>
+                    <div class="flex space-x-2 mt-4">
+                        <button onclick="updateSubject()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-all">
+                            <i class="fas fa-save mr-2"></i>Update
+                        </button>
+                        <button onclick="hideEditSubjectForm()" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-all">
+                            <i class="fas fa-times mr-2"></i>Batal
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Subjects List -->
+                <div id="subjectsList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div class="text-center py-8 col-span-full">
+                        <i class="fas fa-spinner loading text-2xl mb-2 text-gray-400"></i>
+                        <p class="text-gray-500">Memuat mata pelajaran...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Questions Tab -->
+        <div id="questions" class="tab-content hidden">
+            <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-bold">Bank Soal</h3>
+                    <button onclick="showAddQuestionForm()" class="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg transition-all">
+                        <i class="fas fa-plus mr-2"></i>Tambah Soal
+                    </button>
+                </div>
+                
+                <!-- Add Question Form -->
+                <div id="addQuestionForm" class="hidden mb-6 p-4 bg-gray-50 rounded-lg">
+                    <h4 class="font-semibold mb-3">Tambah Soal Baru</h4>
+                    <div class="space-y-4">
+                        <select id="questionSubject" class="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                            <option value="">Pilih Mata Pelajaran</option>
+                        </select>
+                        <textarea id="questionText" placeholder="Tulis soal di sini..." class="w-full border rounded-lg px-3 py-2 h-24 focus:ring-2 focus:ring-purple-500 focus:border-transparent"></textarea>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <input type="text" id="optionA" placeholder="Pilihan A" class="border rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                            <input type="text" id="optionB" placeholder="Pilihan B" class="border rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                            <input type="text" id="optionC" placeholder="Pilihan C" class="border rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                            <input type="text" id="optionD" placeholder="Pilihan D" class="border rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                        </div>
+                        <select id="correctAnswer" class="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                            <option value="">Pilih Jawaban Benar</option>
+                            <option value="A">A</option>
+                            <option value="B">B</option>
+                            <option value="C">C</option>
+                            <option value="D">D</option>
+                        </select>
+                    </div>
+                    <div class="flex space-x-2 mt-4">
+                        <button onclick="saveQuestion()" class="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg transition-all">
+                            <i class="fas fa-save mr-2"></i>Simpan
+                        </button>
+                        <button onclick="hideAddQuestionForm()" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-all">
+                            <i class="fas fa-times mr-2"></i>Batal
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Edit Question Form -->
+                <div id="editQuestionForm" class="hidden mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                    <h4 class="font-semibold mb-3 text-blue-800">Edit Soal</h4>
+                    <div class="space-y-4">
+                        <select id="editQuestionSubject" class="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="">Pilih Mata Pelajaran</option>
+                        </select>
+                        <textarea id="editQuestionText" placeholder="Tulis soal di sini..." class="w-full border rounded-lg px-3 py-2 h-24 focus:ring-2 focus:ring-blue-500 focus:border-transparent"></textarea>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <input type="text" id="editOptionA" placeholder="Pilihan A" class="border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <input type="text" id="editOptionB" placeholder="Pilihan B" class="border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <input type="text" id="editOptionC" placeholder="Pilihan C" class="border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <input type="text" id="editOptionD" placeholder="Pilihan D" class="border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+                        <select id="editCorrectAnswer" class="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="">Pilih Jawaban Benar</option>
+                            <option value="A">A</option>
+                            <option value="B">B</option>
+                            <option value="C">C</option>
+                            <option value="D">D</option>
+                        </select>
+                    </div>
+                    <div class="flex space-x-2 mt-4">
+                        <button onclick="updateQuestion()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-all">
+                            <i class="fas fa-save mr-2"></i>Update
+                        </button>
+                        <button onclick="hideEditQuestionForm()" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-all">
+                            <i class="fas fa-times mr-2"></i>Batal
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Questions List -->
+                <div id="questionsList">
+                    <div class="text-center py-8">
+                        <i class="fas fa-spinner loading text-2xl mb-2 text-gray-400"></i>
+                        <p class="text-gray-500">Memuat bank soal...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quiz Tab -->
+        <div id="quiz" class="tab-content hidden">
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <!-- Quiz Setup -->
+                <div id="quizSetup">
+                    <h3 class="text-xl font-bold mb-4">Mulai Quiz</h3>
+                    
+                    <!-- Sync Section for Students -->
+                    <div id="studentSyncSection" class="hidden mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                        <div class="flex items-center justify-between mb-3">
+                            <h4 class="font-semibold text-blue-800">
+                                <i class="fas fa-sync-alt mr-2"></i>Sinkronisasi Data
+                            </h4>
+                            <div class="flex space-x-2">
+                                <button onclick="syncStudentData()" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded-lg text-sm transition-all">
+                                    <i class="fas fa-users mr-1"></i>Sinkron Siswa
+                                </button>
+                                <button onclick="syncSubjectData()" class="bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded-lg text-sm transition-all">
+                                    <i class="fas fa-book mr-1"></i>Sinkron Mapel
+                                </button>
+                            </div>
+                        </div>
+                        <p class="text-blue-700 text-sm">
+                            <i class="fas fa-info-circle mr-1"></i>
+                            Gunakan tombol sinkron jika data siswa atau mata pelajaran tidak muncul. Berguna saat menggunakan browser baru.
+                        </p>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                        <div>
+                            <div class="flex items-center justify-between mb-2">
+                                <label class="block text-sm font-medium">Nama Siswa</label>
+                                <button onclick="syncStudentData()" class="text-blue-500 hover:text-blue-700 text-xs" title="Sinkron data siswa">
+                                    <i class="fas fa-sync-alt"></i>
+                                </button>
+                            </div>
+                            <select id="quizStudent" class="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                <option value="">Pilih Siswa</option>
+                            </select>
+                            <div id="studentSyncStatus" class="mt-1 text-xs text-gray-500 hidden">
+                                <i class="fas fa-spinner fa-spin mr-1"></i>Menyinkron data siswa...
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex items-center justify-between mb-2">
+                                <label class="block text-sm font-medium">Mata Pelajaran</label>
+                                <button onclick="syncSubjectData()" class="text-green-500 hover:text-green-700 text-xs" title="Sinkron mata pelajaran">
+                                    <i class="fas fa-sync-alt"></i>
+                                </button>
+                            </div>
+                            <select id="quizSubject" class="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                <option value="">Pilih Mata Pelajaran</option>
+                            </select>
+                            <div id="subjectSyncStatus" class="mt-1 text-xs text-gray-500 hidden">
+                                <i class="fas fa-spinner fa-spin mr-1"></i>Menyinkron mata pelajaran...
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex space-x-3">
+                        <button onclick="startQuiz()" class="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg transition-all">
+                            <i class="fas fa-play mr-2"></i>Mulai Quiz
+                        </button>
+                        <button onclick="syncAllQuizData()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-3 rounded-lg transition-all">
+                            <i class="fas fa-sync-alt mr-2"></i>Sinkron Semua
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Quiz Interface -->
+                <div id="quizInterface" class="hidden">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-xl font-bold">Quiz Berlangsung</h3>
+                        <div class="flex items-center space-x-4">
+                            <div class="text-sm text-gray-600">
+                                Soal <span id="currentQuestionNumber">1</span> dari <span id="totalQuestionsCount">0</span>
+                            </div>
+                            <div id="timer" class="bg-red-100 text-red-800 px-3 py-1 rounded-lg font-mono">
+                                00:00
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="questionContainer" class="mb-6">
+                        <!-- Question will be loaded here -->
+                    </div>
+
+                    <div class="flex justify-between">
+                        <button onclick="previousQuestion()" id="prevBtn" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-all disabled:opacity-50" disabled>
+                            <i class="fas fa-chevron-left mr-2"></i>Sebelumnya
+                        </button>
+                        <button onclick="nextQuestion()" id="nextBtn" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-all">
+                            Selanjutnya <i class="fas fa-chevron-right ml-2"></i>
+                        </button>
+                        <button onclick="finishQuiz()" id="finishBtn" class="hidden bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg transition-all">
+                            <i class="fas fa-check mr-2"></i>Selesai
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Quiz Results -->
+                <div id="quizResults" class="hidden text-center">
+                    <div class="mb-6">
+                        <i class="fas fa-trophy text-6xl text-yellow-500 mb-4"></i>
+                        <h3 class="text-2xl font-bold mb-2">Quiz Selesai!</h3>
+                        <div id="scoreDisplay" class="text-4xl font-bold text-green-600 mb-4">0</div>
+                        <div id="scoreDetails" class="text-gray-600"></div>
+                    </div>
+                    <button onclick="resetQuiz()" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg transition-all">
+                        <i class="fas fa-redo mr-2"></i>Quiz Lagi
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Tab -->
+        <div id="results" class="tab-content hidden">
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-bold">Hasil Quiz</h3>
+                    <!-- Auto Sync Section for Students -->
+                    <div id="resultsSyncSection" class="hidden flex items-center space-x-3">
+                        <div class="text-sm text-gray-600">
+                            <i class="fas fa-info-circle mr-1"></i>
+                            Data tidak muncul?
+                        </div>
+                        <button onclick="syncResultsData()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm transition-all">
+                            <i class="fas fa-sync-alt mr-2"></i>Sinkron Hasil
+                        </button>
+                        <button onclick="autoSyncAllResults()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm transition-all">
+                            <i class="fas fa-magic mr-2"></i>Auto Sinkron
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Sync Status for Results -->
+                <div id="resultsSyncStatus" class="hidden mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                    <div class="flex items-center">
+                        <i class="fas fa-spinner fa-spin text-blue-500 mr-2"></i>
+                        <span class="text-blue-700 text-sm">Menyinkron hasil quiz...</span>
+                    </div>
+                </div>
+                
+                <div id="resultsList" class="overflow-x-auto">
+                    <table class="w-full table-auto">
+                        <thead>
+                            <tr class="bg-gray-100">
+                                <th class="px-4 py-2 text-left">Nama Siswa</th>
+                                <th class="px-4 py-2 text-left">Mata Pelajaran</th>
+                                <th class="px-4 py-2 text-left">Skor</th>
+                                <th class="px-4 py-2 text-left">Benar</th>
+                                <th class="px-4 py-2 text-left">Salah</th>
+                                <th class="px-4 py-2 text-left">Tanggal</th>
+                                <th id="resultActionsHeader" class="px-4 py-2 text-left ${userMode === 'teacher' ? '' : 'hidden'}">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="resultsTableBody">
+                            <tr>
+                                <td colspan="6" class="px-4 py-8 text-center text-gray-500">
+                                    <i class="fas fa-spinner loading text-2xl mb-2"></i>
+                                    <p>Memuat hasil quiz...</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 text-center">
+            <i class="fas fa-spinner loading text-3xl text-blue-500 mb-4"></i>
+            <p class="text-lg font-medium">Memproses...</p>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="hidden fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50">
+        <div class="flex items-center">
+            <i class="fas fa-check-circle mr-2"></i>
+            <span id="toastMessage">Berhasil!</span>
+        </div>
+    </div>
+
+    <script>
+        // API Configuration - Connected to Google Apps Script
+        const API_BASE_URL = 'https://script.google.com/macros/s/AKfycbyxDZVS64qI3baORu4VgrTDQ7mpShfF0Sg4z9miJQ5-0zCKWjxgL2-BbSxfD5p--ogrEQ/exec';
+        
+        // Global Variables
+        let currentQuestions = [];
+        let currentQuestionIndex = 0;
+        let quizAnswers = [];
+        let quizStartTime = null;
+        let timerInterval = null;
+        let studentsData = [];
+        let subjectsData = [];
+        let questionsData = [];
+        let resultsData = [];
+        let currentUser = null;
+        let userMode = null; // 'teacher' or 'student'
+
+        // Initialize App
+        document.addEventListener('DOMContentLoaded', function() {
+            showLoginScreen();
+            setupLoginForm();
+        });
+
+        // Login Functions
+        function showLoginScreen() {
+            document.getElementById('loginScreen').classList.remove('hidden');
+            document.getElementById('mainContent').classList.add('hidden');
+            document.querySelector('header').classList.add('hidden');
+            loadStudentsForLogin();
+        }
+
+        function hideLoginScreen() {
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('mainContent').classList.remove('hidden');
+            document.querySelector('header').classList.remove('hidden');
+        }
+
+        function setupLoginForm() {
+            const userModeSelect = document.getElementById('userModeSelect');
+            const usernameInput = document.getElementById('usernameInput');
+            const usernameHelp = document.getElementById('usernameHelp');
+            const studentSelect = document.getElementById('studentSelect');
+            const studentNameSelect = document.getElementById('studentNameSelect');
+            const loginForm = document.getElementById('loginForm');
+
+            // Handle mode selection
+            userModeSelect.addEventListener('change', function() {
+                const mode = this.value;
+                usernameInput.value = '';
+                studentNameSelect.value = '';
+                
+                if (mode === 'teacher') {
+                    usernameHelp.textContent = 'Masukkan "Guru" untuk akses mode guru';
+                    usernameHelp.classList.remove('hidden');
+                    studentSelect.classList.add('hidden');
+                    usernameInput.placeholder = 'Ketik: Guru';
+                } else if (mode === 'student') {
+                    usernameHelp.textContent = 'Masukkan nama siswa yang terdaftar atau pilih dari daftar';
+                    usernameHelp.classList.remove('hidden');
+                    studentSelect.classList.remove('hidden');
+                    usernameInput.placeholder = 'Nama siswa...';
+                } else {
+                    usernameHelp.classList.add('hidden');
+                    studentSelect.classList.add('hidden');
+                    usernameInput.placeholder = 'Masukkan username';
+                }
+            });
+
+            // Handle student selection
+            studentNameSelect.addEventListener('change', function() {
+                if (this.value) {
+                    usernameInput.value = this.value;
+                }
+            });
+
+            // Handle form submission
+            loginForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                handleLogin();
+            });
+        }
+
+        async function loadStudentsForLogin() {
+            try {
+                const response = await apiCallGet('getStudents');
+                const students = response.data || [];
+                
+                const select = document.getElementById('studentNameSelect');
+                select.innerHTML = '<option value="">Pilih nama siswa...</option>';
+                
+                students.forEach(student => {
+                    const option = document.createElement('option');
+                    option.value = student.name;
+                    option.textContent = `${student.name} - Kelas ${student.grade}`;
+                    select.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Error loading students for login:', error);
+            }
+        }
+
+        async function handleLogin() {
+            const mode = document.getElementById('userModeSelect').value;
+            const username = document.getElementById('usernameInput').value.trim();
+
+            if (!mode) {
+                showToast('Pilih mode pengguna!', 'error');
+                return;
+            }
+
+            if (!username) {
+                showToast('Masukkan username!', 'error');
+                return;
+            }
+
+            if (mode === 'teacher') {
+                if (username.toLowerCase() !== 'guru') {
+                    showToast('Username guru harus "Guru"!', 'error');
+                    return;
+                }
+                loginAsTeacher(username);
+            } else if (mode === 'student') {
+                await loginAsStudent(username);
+            }
+        }
+
+        function loginAsTeacher(username) {
+            currentUser = username;
+            userMode = 'teacher';
+            
+            updateUserInfo(username, 'Guru');
+            hideLoginScreen();
+            setupTeacherMode();
+            testConnection();
+            loadAllData();
+            showToast('Selamat datang, Guru!');
+        }
+
+        async function loginAsStudent(username) {
+            try {
+                // Verify student exists
+                const response = await apiCallGet('getStudents');
+                const students = response.data || [];
+                const student = students.find(s => s.name.toLowerCase() === username.toLowerCase());
+                
+                if (!student) {
+                    showToast('Nama siswa tidak ditemukan!', 'error');
+                    return;
+                }
+
+                currentUser = student.name;
+                userMode = 'student';
+                
+                updateUserInfo(student.name, `Siswa Kelas ${student.grade}`);
+                hideLoginScreen();
+                setupStudentMode();
+                testConnection();
+                loadAllData();
+                startPeriodicSync(); // Start periodic sync for students
+                showToast(`Selamat datang, ${student.name}!`);
+            } catch (error) {
+                showToast('Error saat login siswa!', 'error');
+                console.error('Student login error:', error);
+            }
+        }
+
+        function updateUserInfo(name, role) {
+            document.getElementById('userName').textContent = name;
+            document.getElementById('userRole').textContent = role;
+            
+            const userIcon = document.getElementById('userIcon');
+            if (userMode === 'teacher') {
+                userIcon.className = 'fas fa-chalkboard-teacher';
+            } else {
+                userIcon.className = 'fas fa-user-graduate';
+            }
+        }
+
+        function setupTeacherMode() {
+            // Show all tabs for teacher
+            const tabs = document.querySelectorAll('.tab-btn');
+            tabs.forEach(tab => {
+                tab.classList.remove('hidden');
+            });
+            
+            // Show action headers for teacher
+            const studentHeader = document.getElementById('studentActionsHeader');
+            const resultHeader = document.getElementById('resultActionsHeader');
+            if (studentHeader) studentHeader.classList.remove('hidden');
+            if (resultHeader) resultHeader.classList.remove('hidden');
+            
+            // Set default tab to dashboard
+            showTab('dashboard');
+        }
+
+        function setupStudentMode() {
+            // Hide management tabs for students, only show quiz and results
+            const tabs = document.querySelectorAll('.tab-btn');
+            tabs.forEach(tab => {
+                const tabText = tab.textContent.toLowerCase();
+                if (tabText.includes('data siswa') || tabText.includes('mata pelajaran') || tabText.includes('bank soal') || tabText.includes('dashboard')) {
+                    tab.classList.add('hidden');
+                } else {
+                    tab.classList.remove('hidden');
+                }
+            });
+            
+            // Hide action headers for students
+            const studentHeader = document.getElementById('studentActionsHeader');
+            const resultHeader = document.getElementById('resultActionsHeader');
+            if (studentHeader) studentHeader.classList.add('hidden');
+            if (resultHeader) resultHeader.classList.add('hidden');
+            
+            // Show sync sections for students
+            document.getElementById('studentSyncSection').classList.remove('hidden');
+            document.getElementById('resultsSyncSection').classList.remove('hidden');
+            
+            // Set default tab to quiz for students
+            showTab('quiz');
+            
+            // Pre-select current student in quiz
+            setTimeout(() => {
+                const studentSelect = document.getElementById('quizStudent');
+                if (studentSelect) {
+                    studentSelect.value = currentUser;
+                    studentSelect.disabled = true; // Students can't change their name
+                }
+            }, 1000);
+        }
+
+        function logout() {
+            if (confirm('Yakin ingin keluar?')) {
+                currentUser = null;
+                userMode = null;
+                
+                // Stop periodic sync
+                stopPeriodicSync();
+                
+                // Reset forms and data
+                document.getElementById('userModeSelect').value = '';
+                document.getElementById('usernameInput').value = '';
+                document.getElementById('studentNameSelect').value = '';
+                
+                // Reset quiz if in progress
+                if (timerInterval) {
+                    clearInterval(timerInterval);
+                }
+                resetQuiz();
+                
+                showLoginScreen();
+                showToast('Berhasil keluar');
+            }
+        }
+
+        // API Functions
+        async function apiCall(action, params = {}) {
+            try {
+                showLoading(true);
+                
+                // Prepare form data for POST request
+                const formData = new FormData();
+                formData.append('action', action);
+                
+                // Add all parameters to form data
+                Object.keys(params).forEach(key => {
+                    if (params[key] !== null && params[key] !== undefined) {
+                        formData.append(key, params[key]);
+                    }
+                });
+
+                console.log('Sending request:', action, params);
+
+                const response = await fetch(API_BASE_URL, {
+                    method: 'POST',
+                    body: formData,
+                    mode: 'cors'
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                console.log('Response received:', data);
+                
+                if (data.success === false) {
+                    throw new Error(data.error || 'Unknown error occurred');
+                }
+
+                return data;
+            } catch (error) {
+                console.error('API Error:', error);
+                showToast('Error: ' + error.message, 'error');
+                throw error;
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // Alternative API call for GET requests (like loading data)
+        async function apiCallGet(action, params = {}) {
+            try {
+                showLoading(true);
+                
+                const url = new URL(API_BASE_URL);
+                url.searchParams.append('action', action);
+                
+                // Add parameters to URL for GET requests
+                Object.keys(params).forEach(key => {
+                    if (params[key] !== null && params[key] !== undefined) {
+                        url.searchParams.append(key, params[key]);
+                    }
+                });
+
+                console.log('GET request to:', url.toString());
+
+                const response = await fetch(url.toString(), {
+                    method: 'GET',
+                    mode: 'cors'
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                console.log('GET Response:', data);
+                
+                return data;
+            } catch (error) {
+                console.error('API GET Error:', error);
+                showToast('Error loading data: ' + error.message, 'error');
+                throw error;
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // Connection Test
+        async function testConnection() {
+            try {
+                const response = await apiCallGet('testConnection');
+                updateConnectionStatus(true, 'Terhubung ke Google Sheets');
+                console.log('Connection successful:', response);
+            } catch (error) {
+                updateConnectionStatus(false, 'Koneksi gagal');
+                console.error('Connection failed:', error);
+            }
+        }
+
+        function updateConnectionStatus(connected, message) {
+            const statusEl = document.getElementById('connectionStatus');
+            const statusDot = statusEl.querySelector('div');
+            const statusText = statusEl.querySelector('span');
+            
+            if (connected) {
+                statusDot.className = 'w-3 h-3 bg-green-400 rounded-full';
+                statusText.textContent = message;
+            } else {
+                statusDot.className = 'w-3 h-3 bg-red-400 rounded-full animate-pulse';
+                statusText.textContent = message;
+            }
+        }
+
+        // Data Loading Functions
+        async function loadAllData() {
+            try {
+                await Promise.all([
+                    loadStudents(),
+                    loadSubjects(),
+                    loadQuestions(),
+                    loadResults(),
+                    loadStatistics()
+                ]);
+            } catch (error) {
+                console.error('Error loading data:', error);
+            }
+        }
+
+        async function loadStudents() {
+            try {
+                const response = await apiCallGet('getStudents');
+                studentsData = response.data || [];
+                renderStudents();
+                populateStudentSelect();
+            } catch (error) {
+                console.error('Error loading students:', error);
+                studentsData = [];
+            }
+        }
+
+        async function loadSubjects() {
+            try {
+                const response = await apiCallGet('getSubjects');
+                subjectsData = response.data || [];
+                renderSubjects();
+                populateSubjectSelects();
+            } catch (error) {
+                console.error('Error loading subjects:', error);
+                subjectsData = [];
+            }
+        }
+
+        async function loadQuestions() {
+            try {
+                const response = await apiCallGet('getQuestions');
+                questionsData = response.data || [];
+                renderQuestions();
+            } catch (error) {
+                console.error('Error loading questions:', error);
+                questionsData = [];
+            }
+        }
+
+        async function loadResults() {
+            try {
+                const response = await apiCallGet('getResults');
+                resultsData = response.data || [];
+                renderResults();
+            } catch (error) {
+                console.error('Error loading results:', error);
+                resultsData = [];
+            }
+        }
+
+        async function loadStatistics() {
+            try {
+                const response = await apiCallGet('getStatistics');
+                const stats = response.data || {};
+                
+                document.getElementById('totalStudents').textContent = stats.totalStudents || 0;
+                document.getElementById('totalSubjects').textContent = stats.totalSubjects || 0;
+                document.getElementById('totalQuestions').textContent = stats.totalQuestions || 0;
+                document.getElementById('totalResults').textContent = stats.totalResults || 0;
+            } catch (error) {
+                console.error('Error loading statistics:', error);
+            }
+        }
+
+        // Save Functions
+        async function saveStudent() {
+            const name = document.getElementById('studentName').value.trim();
+            const grade = document.getElementById('studentGrade').value;
+            const nisn = document.getElementById('studentNISN').value.trim();
+
+            if (!name || !grade || !nisn) {
+                showToast('Semua field harus diisi!', 'error');
+                return;
+            }
+
+            try {
+                await apiCall('saveStudent', {
+                    name: name,
+                    grade: grade,
+                    nisn: nisn,
+                    createdBy: 'Admin'
+                });
+
+                showToast('Data siswa berhasil disimpan!');
+                hideAddStudentForm();
+                clearStudentForm();
+                loadStudents();
+                loadStatistics();
+            } catch (error) {
+                console.error('Error saving student:', error);
+            }
+        }
+
+        async function saveSubject() {
+            const name = document.getElementById('subjectName').value.trim();
+            const grade = document.getElementById('subjectGrade').value;
+
+            if (!name || !grade) {
+                showToast('Semua field harus diisi!', 'error');
+                return;
+            }
+
+            try {
+                await apiCall('saveSubject', {
+                    name: name,
+                    grade: grade,
+                    createdBy: 'Admin'
+                });
+
+                showToast('Mata pelajaran berhasil disimpan!');
+                hideAddSubjectForm();
+                clearSubjectForm();
+                loadSubjects();
+                loadStatistics();
+            } catch (error) {
+                console.error('Error saving subject:', error);
+            }
+        }
+
+        async function saveQuestion() {
+            const subject = document.getElementById('questionSubject').value;
+            const question = document.getElementById('questionText').value.trim();
+            const optionA = document.getElementById('optionA').value.trim();
+            const optionB = document.getElementById('optionB').value.trim();
+            const optionC = document.getElementById('optionC').value.trim();
+            const optionD = document.getElementById('optionD').value.trim();
+            const correct = document.getElementById('correctAnswer').value;
+
+            if (!subject || !question || !optionA || !optionB || !optionC || !optionD || !correct) {
+                showToast('Semua field harus diisi!', 'error');
+                return;
+            }
+
+            try {
+                await apiCall('saveQuestion', {
+                    subject: subject,
+                    question: question,
+                    optionA: optionA,
+                    optionB: optionB,
+                    optionC: optionC,
+                    optionD: optionD,
+                    correct: correct,
+                    createdBy: 'Admin'
+                });
+
+                showToast('Soal berhasil disimpan!');
+                hideAddQuestionForm();
+                clearQuestionForm();
+                loadQuestions();
+                loadStatistics();
+            } catch (error) {
+                console.error('Error saving question:', error);
+            }
+        }
+
+        async function saveQuizResult(studentName, subject, totalQuestions, correctAnswers, score, answers) {
+            try {
+                await apiCall('saveResult', {
+                    studentName: studentName,
+                    subject: subject,
+                    totalQuestions: totalQuestions,
+                    correctAnswers: correctAnswers,
+                    wrongAnswers: totalQuestions - correctAnswers,
+                    score: score,
+                    startTime: quizStartTime,
+                    endTime: new Date().toISOString(),
+                    answers: JSON.stringify(answers)
+                });
+
+                loadResults();
+                loadStatistics();
+            } catch (error) {
+                console.error('Error saving quiz result:', error);
+            }
+        }
+
+        // Render Functions
+        function renderStudents() {
+            const tbody = document.getElementById('studentsTableBody');
+            
+            if (studentsData.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="${userMode === 'teacher' ? '5' : '4'}" class="px-4 py-8 text-center text-gray-500">
+                            <i class="fas fa-users text-4xl mb-2"></i>
+                            <p>Belum ada data siswa</p>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = studentsData.map((student, index) => `
+                <tr class="border-b hover:bg-gray-50">
+                    <td class="px-4 py-3 font-medium">${student.name || ''}</td>
+                    <td class="px-4 py-3">Kelas ${student.grade || ''}</td>
+                    <td class="px-4 py-3">${student.nisn || ''}</td>
+                    <td class="px-4 py-3">${formatDate(student.createdat)}</td>
+                    ${userMode === 'teacher' ? `
+                        <td class="px-4 py-3">
+                            <div class="flex space-x-2">
+                                <button onclick="editStudent(${index})" class="bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded text-xs transition-all" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button onclick="deleteStudent(${index})" class="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded text-xs transition-all" title="Hapus">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    ` : ''}
+                </tr>
+            `).join('');
+        }
+
+        function renderSubjects() {
+            const container = document.getElementById('subjectsList');
+            
+            if (subjectsData.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8 col-span-full">
+                        <i class="fas fa-book text-4xl mb-2 text-gray-400"></i>
+                        <p class="text-gray-500">Belum ada mata pelajaran</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = subjectsData.map((subject, index) => `
+                <div class="bg-gray-50 rounded-lg p-4 card-hover">
+                    <div class="flex items-center justify-between mb-2">
+                        <h4 class="font-semibold text-lg">${subject.name || ''}</h4>
+                        <div class="flex items-center space-x-2">
+                            <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm">Kelas ${subject.grade || ''}</span>
+                            ${userMode === 'teacher' ? `
+                                <button onclick="editSubject(${index})" class="bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded text-xs transition-all" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button onclick="deleteSubject(${index})" class="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded text-xs transition-all" title="Hapus">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                    <p class="text-gray-600 text-sm">Dibuat: ${formatDate(subject.createdat)}</p>
+                </div>
+            `).join('');
+        }
+
+        function renderQuestions() {
+            const container = document.getElementById('questionsList');
+            
+            if (questionsData.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8">
+                        <i class="fas fa-question-circle text-4xl mb-2 text-gray-400"></i>
+                        <p class="text-gray-500">Belum ada soal</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = questionsData.map((question, index) => `
+                <div class="border rounded-lg p-4 mb-4 card-hover">
+                    <div class="flex justify-between items-start mb-3">
+                        <span class="bg-purple-100 text-purple-800 px-2 py-1 rounded text-sm">${question.subject || ''}</span>
+                        <div class="flex items-center space-x-2">
+                            <span class="text-gray-500 text-sm">#${index + 1}</span>
+                            ${userMode === 'teacher' ? `
+                                <button onclick="editQuestion(${index})" class="bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded text-xs transition-all" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button onclick="deleteQuestion(${index})" class="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded text-xs transition-all" title="Hapus">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                    <h4 class="font-semibold mb-3">${question.question || ''}</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+                        <div class="flex items-center">
+                            <span class="w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center mr-2 text-xs font-medium">A</span>
+                            ${question.optiona || ''}
+                        </div>
+                        <div class="flex items-center">
+                            <span class="w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center mr-2 text-xs font-medium">B</span>
+                            ${question.optionb || ''}
+                        </div>
+                        <div class="flex items-center">
+                            <span class="w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center mr-2 text-xs font-medium">C</span>
+                            ${question.optionc || ''}
+                        </div>
+                        <div class="flex items-center">
+                            <span class="w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center mr-2 text-xs font-medium">D</span>
+                            ${question.optiond || ''}
+                        </div>
+                    </div>
+                    <div class="mt-3 pt-3 border-t">
+                        <span class="text-green-600 font-medium">Jawaban: ${question.correct || ''}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderResults() {
+            const tbody = document.getElementById('resultsTableBody');
+            
+            // Filter results based on user mode
+            let filteredResults = resultsData;
+            if (userMode === 'student' && currentUser) {
+                filteredResults = resultsData.filter(result => 
+                    result.studentname && result.studentname.toLowerCase() === currentUser.toLowerCase()
+                );
+            }
+            
+            if (filteredResults.length === 0) {
+                const message = userMode === 'student' ? 'Belum ada hasil quiz Anda' : 'Belum ada hasil quiz';
+                const colspan = userMode === 'teacher' ? '7' : '6';
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="${colspan}" class="px-4 py-8 text-center text-gray-500">
+                            <i class="fas fa-chart-bar text-4xl mb-2"></i>
+                            <p>${message}</p>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = filteredResults.map((result, index) => `
+                <tr class="border-b hover:bg-gray-50">
+                    <td class="px-4 py-3 font-medium">${result.studentname || ''}</td>
+                    <td class="px-4 py-3">${result.subject || ''}</td>
+                    <td class="px-4 py-3">
+                        <span class="bg-green-100 text-green-800 px-2 py-1 rounded font-medium">${result.score || 0}</span>
+                    </td>
+                    <td class="px-4 py-3 text-green-600">${result.correctanswers || 0}</td>
+                    <td class="px-4 py-3 text-red-600">${result.wronganswers || 0}</td>
+                    <td class="px-4 py-3">${formatDate(result.starttime)}</td>
+                    ${userMode === 'teacher' ? `
+                        <td class="px-4 py-3">
+                            <button onclick="deleteResult(${index})" class="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded text-xs transition-all" title="Hapus">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    ` : ''}
+                </tr>
+            `).join('');
+        }
+
+        // Populate Select Options
+        function populateStudentSelect() {
+            const select = document.getElementById('quizStudent');
+            select.innerHTML = '<option value="">Pilih Siswa</option>';
+            
+            studentsData.forEach(student => {
+                const option = document.createElement('option');
+                option.value = student.name;
+                option.textContent = `${student.name} - Kelas ${student.grade}`;
+                select.appendChild(option);
+            });
+        }
+
+        function populateSubjectSelects() {
+            const selects = ['quizSubject', 'questionSubject'];
+            
+            selects.forEach(selectId => {
+                const select = document.getElementById(selectId);
+                select.innerHTML = '<option value="">Pilih Mata Pelajaran</option>';
+                
+                subjectsData.forEach(subject => {
+                    const option = document.createElement('option');
+                    option.value = subject.name;
+                    option.textContent = `${subject.name} - Kelas ${subject.grade}`;
+                    select.appendChild(option);
+                });
+            });
+        }
+
+        // Quiz Functions
+        async function startQuiz() {
+            const studentName = document.getElementById('quizStudent').value;
+            const subjectName = document.getElementById('quizSubject').value;
+
+            if (!studentName || !subjectName) {
+                showToast('Pilih siswa dan mata pelajaran!', 'error');
+                return;
+            }
+
+            // Filter questions by subject
+            currentQuestions = questionsData.filter(q => q.subject === subjectName);
+            
+            if (currentQuestions.length === 0) {
+                showToast('Tidak ada soal untuk mata pelajaran ini!', 'error');
+                return;
+            }
+
+            // Shuffle questions
+            currentQuestions = shuffleArray(currentQuestions);
+            
+            // Initialize quiz
+            currentQuestionIndex = 0;
+            quizAnswers = new Array(currentQuestions.length).fill(null);
+            quizStartTime = new Date().toISOString();
+            
+            // Show quiz interface
+            document.getElementById('quizSetup').classList.add('hidden');
+            document.getElementById('quizInterface').classList.remove('hidden');
+            
+            // Update UI
+            document.getElementById('totalQuestionsCount').textContent = currentQuestions.length;
+            
+            // Start timer
+            startTimer();
+            
+            // Load first question
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            const question = currentQuestions[currentQuestionIndex];
+            const container = document.getElementById('questionContainer');
+            
+            container.innerHTML = `
+                <div class="bg-gray-50 rounded-lg p-6">
+                    <h4 class="text-lg font-semibold mb-4">${question.question}</h4>
+                    <div class="space-y-3">
+                        <label class="flex items-center p-3 bg-white rounded-lg cursor-pointer hover:bg-blue-50 transition-all">
+                            <input type="radio" name="answer" value="A" class="mr-3" ${quizAnswers[currentQuestionIndex] === 'A' ? 'checked' : ''}>
+                            <span class="w-8 h-8 bg-blue-100 text-blue-800 rounded-full flex items-center justify-center mr-3 font-medium">A</span>
+                            ${question.optiona}
+                        </label>
+                        <label class="flex items-center p-3 bg-white rounded-lg cursor-pointer hover:bg-blue-50 transition-all">
+                            <input type="radio" name="answer" value="B" class="mr-3" ${quizAnswers[currentQuestionIndex] === 'B' ? 'checked' : ''}>
+                            <span class="w-8 h-8 bg-blue-100 text-blue-800 rounded-full flex items-center justify-center mr-3 font-medium">B</span>
+                            ${question.optionb}
+                        </label>
+                        <label class="flex items-center p-3 bg-white rounded-lg cursor-pointer hover:bg-blue-50 transition-all">
+                            <input type="radio" name="answer" value="C" class="mr-3" ${quizAnswers[currentQuestionIndex] === 'C' ? 'checked' : ''}>
+                            <span class="w-8 h-8 bg-blue-100 text-blue-800 rounded-full flex items-center justify-center mr-3 font-medium">C</span>
+                            ${question.optionc}
+                        </label>
+                        <label class="flex items-center p-3 bg-white rounded-lg cursor-pointer hover:bg-blue-50 transition-all">
+                            <input type="radio" name="answer" value="D" class="mr-3" ${quizAnswers[currentQuestionIndex] === 'D' ? 'checked' : ''}>
+                            <span class="w-8 h-8 bg-blue-100 text-blue-800 rounded-full flex items-center justify-center mr-3 font-medium">D</span>
+                            ${question.optiond}
+                        </label>
+                    </div>
+                </div>
+            `;
+
+            // Update question number
+            document.getElementById('currentQuestionNumber').textContent = currentQuestionIndex + 1;
+            
+            // Update navigation buttons
+            document.getElementById('prevBtn').disabled = currentQuestionIndex === 0;
+            
+            if (currentQuestionIndex === currentQuestions.length - 1) {
+                document.getElementById('nextBtn').classList.add('hidden');
+                document.getElementById('finishBtn').classList.remove('hidden');
+            } else {
+                document.getElementById('nextBtn').classList.remove('hidden');
+                document.getElementById('finishBtn').classList.add('hidden');
+            }
+
+            // Add event listeners for answer selection
+            const radioButtons = container.querySelectorAll('input[name="answer"]');
+            radioButtons.forEach(radio => {
+                radio.addEventListener('change', function() {
+                    quizAnswers[currentQuestionIndex] = this.value;
+                });
+            });
+        }
+
+        function previousQuestion() {
+            if (currentQuestionIndex > 0) {
+                currentQuestionIndex--;
+                loadQuestion();
+            }
+        }
+
+        function nextQuestion() {
+            if (currentQuestionIndex < currentQuestions.length - 1) {
+                currentQuestionIndex++;
+                loadQuestion();
+            }
+        }
+
+        function finishQuiz() {
+            // Stop timer
+            if (timerInterval) {
+                clearInterval(timerInterval);
+            }
+
+            // Calculate score
+            let correctAnswers = 0;
+            currentQuestions.forEach((question, index) => {
+                if (quizAnswers[index] === question.correct) {
+                    correctAnswers++;
+                }
+            });
+
+            const totalQuestions = currentQuestions.length;
+            const score = Math.round((correctAnswers / totalQuestions) * 100);
+
+            // Save result
+            const studentName = document.getElementById('quizStudent').value;
+            const subjectName = document.getElementById('quizSubject').value;
+            
+            saveQuizResult(studentName, subjectName, totalQuestions, correctAnswers, score, quizAnswers);
+
+            // Show results
+            document.getElementById('quizInterface').classList.add('hidden');
+            document.getElementById('quizResults').classList.remove('hidden');
+            
+            document.getElementById('scoreDisplay').textContent = score + '%';
+            document.getElementById('scoreDetails').innerHTML = `
+                <p>Jawaban Benar: ${correctAnswers} dari ${totalQuestions} soal</p>
+                <p>Jawaban Salah: ${totalQuestions - correctAnswers} soal</p>
+            `;
+        }
+
+        function resetQuiz() {
+            document.getElementById('quizResults').classList.add('hidden');
+            document.getElementById('quizSetup').classList.remove('hidden');
+            
+            // Reset form
+            document.getElementById('quizStudent').value = '';
+            document.getElementById('quizSubject').value = '';
+            
+            // Reset variables
+            currentQuestions = [];
+            currentQuestionIndex = 0;
+            quizAnswers = [];
+            quizStartTime = null;
+            
+            if (timerInterval) {
+                clearInterval(timerInterval);
+            }
+        }
+
+        function startTimer() {
+            let seconds = 0;
+            timerInterval = setInterval(() => {
+                seconds++;
+                const minutes = Math.floor(seconds / 60);
+                const remainingSeconds = seconds % 60;
+                document.getElementById('timer').textContent = 
+                    `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+            }, 1000);
+        }
+
+        // Tab Functions
+        function showTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.add('hidden');
+            });
+            
+            // Remove active class from all buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active', 'border-b-2', 'border-blue-500', 'text-blue-600');
+            });
+            
+            // Show selected tab
+            document.getElementById(tabName).classList.remove('hidden');
+            
+            // Add active class to clicked button - handle both event and direct calls
+            const targetButton = event ? event.target : document.querySelector(`[onclick="showTab('${tabName}')"]`);
+            if (targetButton) {
+                targetButton.classList.add('active', 'border-b-2', 'border-blue-500', 'text-blue-600');
+            }
+            
+            // Auto-select student name in quiz for student mode
+            if (tabName === 'quiz' && userMode === 'student' && currentUser) {
+                setTimeout(() => {
+                    const studentSelect = document.getElementById('quizStudent');
+                    if (studentSelect) {
+                        studentSelect.value = currentUser;
+                        studentSelect.disabled = true;
+                    }
+                }, 100);
+                
+                // Auto-sync data if needed
+                autoSyncForStudents();
+            }
+            
+            // Auto-sync results when student opens results tab
+            if (tabName === 'results' && userMode === 'student') {
+                autoSyncResultsForStudents();
+            }
+        }
+
+        // Form Functions
+        function showAddStudentForm() {
+            document.getElementById('addStudentForm').classList.remove('hidden');
+            document.getElementById('editStudentForm').classList.add('hidden');
+        }
+
+        function hideAddStudentForm() {
+            document.getElementById('addStudentForm').classList.add('hidden');
+        }
+
+        function clearStudentForm() {
+            document.getElementById('studentName').value = '';
+            document.getElementById('studentGrade').value = '';
+            document.getElementById('studentNISN').value = '';
+        }
+
+        // Student Edit/Delete Functions
+        let editingStudentIndex = -1;
+
+        function editStudent(index) {
+            const student = studentsData[index];
+            editingStudentIndex = index;
+            
+            document.getElementById('editStudentName').value = student.name || '';
+            document.getElementById('editStudentGrade').value = student.grade || '';
+            document.getElementById('editStudentNISN').value = student.nisn || '';
+            
+            document.getElementById('addStudentForm').classList.add('hidden');
+            document.getElementById('editStudentForm').classList.remove('hidden');
+        }
+
+        function hideEditStudentForm() {
+            document.getElementById('editStudentForm').classList.add('hidden');
+            editingStudentIndex = -1;
+        }
+
+        async function updateStudent() {
+            if (editingStudentIndex === -1) return;
+            
+            const name = document.getElementById('editStudentName').value.trim();
+            const grade = document.getElementById('editStudentGrade').value;
+            const nisn = document.getElementById('editStudentNISN').value.trim();
+
+            if (!name || !grade || !nisn) {
+                showToast('Semua field harus diisi!', 'error');
+                return;
+            }
+
+            try {
+                const student = studentsData[editingStudentIndex];
+                await apiCall('updateStudent', {
+                    id: student.id,
+                    name: name,
+                    grade: grade,
+                    nisn: nisn
+                });
+
+                showToast('Data siswa berhasil diupdate!');
+                hideEditStudentForm();
+                loadStudents();
+                loadStatistics();
+            } catch (error) {
+                console.error('Error updating student:', error);
+            }
+        }
+
+        async function deleteStudent(index) {
+            const student = studentsData[index];
+            
+            if (confirm(`Yakin ingin menghapus data siswa "${student.name}"?\n\nData ini akan terhapus permanen dari Google Sheets!`)) {
+                try {
+                    await apiCall('deleteStudent', {
+                        id: student.id
+                    });
+
+                    showToast('Data siswa berhasil dihapus!');
+                    loadStudents();
+                    loadStatistics();
+                } catch (error) {
+                    console.error('Error deleting student:', error);
+                }
+            }
+        }
+
+        function showAddSubjectForm() {
+            document.getElementById('addSubjectForm').classList.remove('hidden');
+            document.getElementById('editSubjectForm').classList.add('hidden');
+        }
+
+        function hideAddSubjectForm() {
+            document.getElementById('addSubjectForm').classList.add('hidden');
+        }
+
+        function clearSubjectForm() {
+            document.getElementById('subjectName').value = '';
+            document.getElementById('subjectGrade').value = '';
+        }
+
+        // Subject Edit/Delete Functions
+        let editingSubjectIndex = -1;
+
+        function editSubject(index) {
+            const subject = subjectsData[index];
+            editingSubjectIndex = index;
+            
+            document.getElementById('editSubjectName').value = subject.name || '';
+            document.getElementById('editSubjectGrade').value = subject.grade || '';
+            
+            document.getElementById('addSubjectForm').classList.add('hidden');
+            document.getElementById('editSubjectForm').classList.remove('hidden');
+        }
+
+        function hideEditSubjectForm() {
+            document.getElementById('editSubjectForm').classList.add('hidden');
+            editingSubjectIndex = -1;
+        }
+
+        async function updateSubject() {
+            if (editingSubjectIndex === -1) return;
+            
+            const name = document.getElementById('editSubjectName').value.trim();
+            const grade = document.getElementById('editSubjectGrade').value;
+
+            if (!name || !grade) {
+                showToast('Semua field harus diisi!', 'error');
+                return;
+            }
+
+            try {
+                const subject = subjectsData[editingSubjectIndex];
+                await apiCall('updateSubject', {
+                    id: subject.id,
+                    name: name,
+                    grade: grade
+                });
+
+                showToast('Mata pelajaran berhasil diupdate!');
+                hideEditSubjectForm();
+                loadSubjects();
+                loadStatistics();
+            } catch (error) {
+                console.error('Error updating subject:', error);
+            }
+        }
+
+        async function deleteSubject(index) {
+            const subject = subjectsData[index];
+            
+            if (confirm(`Yakin ingin menghapus mata pelajaran "${subject.name}"?\n\nData ini akan terhapus permanen dari Google Sheets!`)) {
+                try {
+                    await apiCall('deleteSubject', {
+                        id: subject.id
+                    });
+
+                    showToast('Mata pelajaran berhasil dihapus!');
+                    loadSubjects();
+                    loadStatistics();
+                } catch (error) {
+                    console.error('Error deleting subject:', error);
+                }
+            }
+        }
+
+        function showAddQuestionForm() {
+            document.getElementById('addQuestionForm').classList.remove('hidden');
+            document.getElementById('editQuestionForm').classList.add('hidden');
+        }
+
+        function hideAddQuestionForm() {
+            document.getElementById('addQuestionForm').classList.add('hidden');
+        }
+
+        function clearQuestionForm() {
+            document.getElementById('questionSubject').value = '';
+            document.getElementById('questionText').value = '';
+            document.getElementById('optionA').value = '';
+            document.getElementById('optionB').value = '';
+            document.getElementById('optionC').value = '';
+            document.getElementById('optionD').value = '';
+            document.getElementById('correctAnswer').value = '';
+        }
+
+        // Question Edit/Delete Functions
+        let editingQuestionIndex = -1;
+
+        function editQuestion(index) {
+            const question = questionsData[index];
+            editingQuestionIndex = index;
+            
+            // Populate edit form
+            document.getElementById('editQuestionSubject').value = question.subject || '';
+            document.getElementById('editQuestionText').value = question.question || '';
+            document.getElementById('editOptionA').value = question.optiona || '';
+            document.getElementById('editOptionB').value = question.optionb || '';
+            document.getElementById('editOptionC').value = question.optionc || '';
+            document.getElementById('editOptionD').value = question.optiond || '';
+            document.getElementById('editCorrectAnswer').value = question.correct || '';
+            
+            // Populate subject options for edit form
+            const editSelect = document.getElementById('editQuestionSubject');
+            editSelect.innerHTML = '<option value="">Pilih Mata Pelajaran</option>';
+            subjectsData.forEach(subject => {
+                const option = document.createElement('option');
+                option.value = subject.name;
+                option.textContent = `${subject.name} - Kelas ${subject.grade}`;
+                if (subject.name === question.subject) {
+                    option.selected = true;
+                }
+                editSelect.appendChild(option);
+            });
+            
+            document.getElementById('addQuestionForm').classList.add('hidden');
+            document.getElementById('editQuestionForm').classList.remove('hidden');
+        }
+
+        function hideEditQuestionForm() {
+            document.getElementById('editQuestionForm').classList.add('hidden');
+            editingQuestionIndex = -1;
+        }
+
+        async function updateQuestion() {
+            if (editingQuestionIndex === -1) return;
+            
+            const subject = document.getElementById('editQuestionSubject').value;
+            const question = document.getElementById('editQuestionText').value.trim();
+            const optionA = document.getElementById('editOptionA').value.trim();
+            const optionB = document.getElementById('editOptionB').value.trim();
+            const optionC = document.getElementById('editOptionC').value.trim();
+            const optionD = document.getElementById('editOptionD').value.trim();
+            const correct = document.getElementById('editCorrectAnswer').value;
+
+            if (!subject || !question || !optionA || !optionB || !optionC || !optionD || !correct) {
+                showToast('Semua field harus diisi!', 'error');
+                return;
+            }
+
+            try {
+                const questionData = questionsData[editingQuestionIndex];
+                await apiCall('updateQuestion', {
+                    id: questionData.id,
+                    subject: subject,
+                    question: question,
+                    optionA: optionA,
+                    optionB: optionB,
+                    optionC: optionC,
+                    optionD: optionD,
+                    correct: correct
+                });
+
+                showToast('Soal berhasil diupdate!');
+                hideEditQuestionForm();
+                loadQuestions();
+                loadStatistics();
+            } catch (error) {
+                console.error('Error updating question:', error);
+            }
+        }
+
+        async function deleteQuestion(index) {
+            const question = questionsData[index];
+            
+            if (confirm(`Yakin ingin menghapus soal ini?\n\n"${question.question}"\n\nData ini akan terhapus permanen dari Google Sheets!`)) {
+                try {
+                    await apiCall('deleteQuestion', {
+                        id: question.id
+                    });
+
+                    showToast('Soal berhasil dihapus!');
+                    loadQuestions();
+                    loadStatistics();
+                } catch (error) {
+                    console.error('Error deleting question:', error);
+                }
+            }
+        }
+
+        // Result Delete Function
+        async function deleteResult(index) {
+            const result = resultsData[index];
+            
+            if (confirm(`Yakin ingin menghapus hasil quiz?\n\nSiswa: ${result.studentname}\nMapel: ${result.subject}\nSkor: ${result.score}\n\nData ini akan terhapus permanen dari Google Sheets!`)) {
+                try {
+                    await apiCall('deleteResult', {
+                        id: result.id
+                    });
+
+                    showToast('Hasil quiz berhasil dihapus!');
+                    loadResults();
+                    loadStatistics();
+                } catch (error) {
+                    console.error('Error deleting result:', error);
+                }
+            }
+        }
+
+        // Utility Functions
+        function showLoading(show) {
+            const overlay = document.getElementById('loadingOverlay');
+            if (show) {
+                overlay.classList.remove('hidden');
+            } else {
+                overlay.classList.add('hidden');
+            }
+        }
+
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toastMessage');
+            
+            toastMessage.textContent = message;
+            
+            if (type === 'error') {
+                toast.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+                toast.querySelector('i').className = 'fas fa-exclamation-circle mr-2';
+            } else if (type === 'info') {
+                toast.className = 'fixed top-4 right-4 bg-blue-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+                toast.querySelector('i').className = 'fas fa-info-circle mr-2';
+            } else {
+                toast.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+                toast.querySelector('i').className = 'fas fa-check-circle mr-2';
+            }
+            
+            toast.classList.remove('hidden');
+            
+            setTimeout(() => {
+                toast.classList.add('hidden');
+            }, 3000);
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return '-';
+            
+            try {
+                const date = new Date(dateString);
+                return date.toLocaleDateString('id-ID', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric'
+                });
+            } catch (error) {
+                return '-';
+            }
+        }
+
+        function shuffleArray(array) {
+            const shuffled = [...array];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+            return shuffled;
+        }
+
+        // Sync Functions for Students
+        async function syncStudentData() {
+            const statusEl = document.getElementById('studentSyncStatus');
+            
+            try {
+                statusEl.classList.remove('hidden');
+                statusEl.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Menyinkron data siswa...';
+                
+                await loadStudents();
+                
+                statusEl.innerHTML = '<i class="fas fa-check text-green-500 mr-1"></i>Data siswa berhasil disinkron!';
+                showToast('Data siswa berhasil disinkron!');
+                
+                // Auto-select current student if in student mode
+                if (userMode === 'student' && currentUser) {
+                    setTimeout(() => {
+                        const studentSelect = document.getElementById('quizStudent');
+                        if (studentSelect) {
+                            studentSelect.value = currentUser;
+                            studentSelect.disabled = true;
+                        }
+                    }, 500);
+                }
+                
+                setTimeout(() => {
+                    statusEl.classList.add('hidden');
+                }, 3000);
+                
+            } catch (error) {
+                statusEl.innerHTML = '<i class="fas fa-exclamation-triangle text-red-500 mr-1"></i>Gagal menyinkron data siswa';
+                showToast('Gagal menyinkron data siswa!', 'error');
+                
+                setTimeout(() => {
+                    statusEl.classList.add('hidden');
+                }, 3000);
+            }
+        }
+
+        async function syncSubjectData() {
+            const statusEl = document.getElementById('subjectSyncStatus');
+            
+            try {
+                statusEl.classList.remove('hidden');
+                statusEl.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Menyinkron mata pelajaran...';
+                
+                await loadSubjects();
+                
+                statusEl.innerHTML = '<i class="fas fa-check text-green-500 mr-1"></i>Mata pelajaran berhasil disinkron!';
+                showToast('Mata pelajaran berhasil disinkron!');
+                
+                setTimeout(() => {
+                    statusEl.classList.add('hidden');
+                }, 3000);
+                
+            } catch (error) {
+                statusEl.innerHTML = '<i class="fas fa-exclamation-triangle text-red-500 mr-1"></i>Gagal menyinkron mata pelajaran';
+                showToast('Gagal menyinkron mata pelajaran!', 'error');
+                
+                setTimeout(() => {
+                    statusEl.classList.add('hidden');
+                }, 3000);
+            }
+        }
+
+        async function syncAllQuizData() {
+            try {
+                showLoading(true);
+                showToast('Menyinkron semua data...', 'info');
+                
+                // Sync all data needed for quiz
+                await Promise.all([
+                    loadStudents(),
+                    loadSubjects(),
+                    loadQuestions()
+                ]);
+                
+                // Auto-select current student if in student mode
+                if (userMode === 'student' && currentUser) {
+                    setTimeout(() => {
+                        const studentSelect = document.getElementById('quizStudent');
+                        if (studentSelect) {
+                            studentSelect.value = currentUser;
+                            studentSelect.disabled = true;
+                        }
+                    }, 500);
+                }
+                
+                showToast('Semua data berhasil disinkron!');
+                
+            } catch (error) {
+                showToast('Gagal menyinkron data!', 'error');
+                console.error('Sync all data error:', error);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // Auto-sync data when student opens quiz tab
+        function autoSyncForStudents() {
+            if (userMode === 'student') {
+                // Check if data is empty and auto-sync
+                if (studentsData.length === 0 || subjectsData.length === 0) {
+                    setTimeout(() => {
+                        syncAllQuizData();
+                    }, 1000);
+                }
+            }
+        }
+
+        // Sync Results Data Function
+        async function syncResultsData() {
+            const statusEl = document.getElementById('resultsSyncStatus');
+            
+            try {
+                statusEl.classList.remove('hidden');
+                statusEl.innerHTML = `
+                    <div class="flex items-center">
+                        <i class="fas fa-spinner fa-spin text-blue-500 mr-2"></i>
+                        <span class="text-blue-700 text-sm">Menyinkron hasil quiz...</span>
+                    </div>
+                `;
+                
+                await loadResults();
+                
+                statusEl.innerHTML = `
+                    <div class="flex items-center">
+                        <i class="fas fa-check text-green-500 mr-2"></i>
+                        <span class="text-green-700 text-sm">Hasil quiz berhasil disinkron!</span>
+                    </div>
+                `;
+                showToast('Hasil quiz berhasil disinkron!');
+                
+                setTimeout(() => {
+                    statusEl.classList.add('hidden');
+                }, 3000);
+                
+            } catch (error) {
+                statusEl.innerHTML = `
+                    <div class="flex items-center">
+                        <i class="fas fa-exclamation-triangle text-red-500 mr-2"></i>
+                        <span class="text-red-700 text-sm">Gagal menyinkron hasil quiz</span>
+                    </div>
+                `;
+                showToast('Gagal menyinkron hasil quiz!', 'error');
+                
+                setTimeout(() => {
+                    statusEl.classList.add('hidden');
+                }, 3000);
+            }
+        }
+
+        // Auto Sync All Results Function
+        async function autoSyncAllResults() {
+            try {
+                showLoading(true);
+                showToast('Menyinkron semua data hasil quiz...', 'info');
+                
+                // Sync all related data
+                await Promise.all([
+                    loadStudents(),
+                    loadSubjects(),
+                    loadResults()
+                ]);
+                
+                showToast('Semua data hasil quiz berhasil disinkron!');
+                
+            } catch (error) {
+                showToast('Gagal menyinkron data hasil quiz!', 'error');
+                console.error('Auto sync all results error:', error);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // Auto-sync results when student opens results tab
+        function autoSyncResultsForStudents() {
+            if (userMode === 'student') {
+                // Check if results data is empty or doesn't contain current student's results
+                const studentResults = resultsData.filter(result => 
+                    result.studentname && result.studentname.toLowerCase() === currentUser.toLowerCase()
+                );
+                
+                // Auto-sync if no results found for current student or data seems outdated
+                if (resultsData.length === 0 || studentResults.length === 0) {
+                    setTimeout(() => {
+                        syncResultsData();
+                    }, 1000);
+                }
+            }
+        }
+
+        // Periodic Auto-Sync for Students (every 30 seconds when on results tab)
+        let autoSyncInterval = null;
+
+        function startPeriodicSync() {
+            if (userMode === 'student' && !autoSyncInterval) {
+                autoSyncInterval = setInterval(() => {
+                    // Only sync if currently on results tab
+                    const resultsTab = document.getElementById('results');
+                    if (!resultsTab.classList.contains('hidden')) {
+                        console.log('Periodic sync: Checking for new results...');
+                        syncResultsData();
+                    }
+                }, 30000); // Every 30 seconds
+            }
+        }
+
+        function stopPeriodicSync() {
+            if (autoSyncInterval) {
+                clearInterval(autoSyncInterval);
+                autoSyncInterval = null;
+            }
+        }
+
+        // Initialize first tab
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelector('.tab-btn').classList.add('active', 'border-b-2', 'border-blue-500', 'text-blue-600');
+        });
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'97c5075ac361ce52',t:'MTc1NzQwMzUzNC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
